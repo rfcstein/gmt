@@ -25,7 +25,7 @@
 
     The uppercase symbols **A**, **C**, **D**, **G**, **H**, **I**, **N**,
     **S**, **T** are normalized to have the same area as a circle with
-    diameter *size*, while the size of the corresponding lowercase symbols
+    diameter *size*, while the *size* of the corresponding lowercase symbols
     refers to the diameter of a circumscribed circle.
 
     You can change symbols by adding the required **-S** option to any of
@@ -104,11 +104,11 @@
         **p**\ oint. No size needs to be specified (1 pixel is used).
 
     **-Sr**
-        **r**\ ectangle. No size needs to be specified, but the x- and
-        y-dimensions must be found in columns 3 and 4.
+        **r**\ ectangle. If *width*/*height* are not given, then the x- and
+        y-dimensions must be found in data columns 3 and 4.
 
     **-SR**
-        **R**\ ounded rectangle. No size needs to be specified, but the x-
+        **R**\ ounded rectangle. If *width*/*height*/*radius* are not given, then the x-
         and y-dimensions and corner radius must be found in columns 3, 4, and 5.
 
     **-Ss**

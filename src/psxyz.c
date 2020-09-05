@@ -259,8 +259,8 @@ static int usage (struct GMTAPI_CTRL *API, int level) {
 	gmt_cont_syntax (API->GMT, 7, 1);
 	GMT_Message (API, GMT_TIME_NONE, "\t     <labelinfo> controls the label attributes.  Choose from\n");
 	gmt_label_syntax (API->GMT, 7, 1);
-	GMT_Message (API, GMT_TIME_NONE, "\t   Rectangles: x- and y-dimensions must be in columns 4-5.\n");
-	GMT_Message (API, GMT_TIME_NONE, "\t   Rounded rectangles: x- and y-dimensions and corner radius must be in columns 3-5.\n");
+	GMT_Message (API, GMT_TIME_NONE, "\t   Rectangles: If not given, the x- and y-dimensions must be in columns 4-5.\n");
+	GMT_Message (API, GMT_TIME_NONE, "\t   Rounded rectangles: If not given, the x- and y-dimensions and corner radius must be in columns 3-5.\n");
 	GMT_Message (API, GMT_TIME_NONE, "\t   Vectors: Direction and length must be in columns 4-5.\n");
 	GMT_Message (API, GMT_TIME_NONE, "\t     If -SV rather than -Sv is use, %s will expect azimuth and\n", mod_name);
 	GMT_Message (API, GMT_TIME_NONE, "\t     length and convert azimuths based on the chosen map projection.\n");
@@ -1159,23 +1159,29 @@ EXTERN_MSC int GMT_psxyz (void *V_API, int mode, void *args) {
 					data[n].dim[2] = (gmt_M_is_dnan (S.base)) ? 0.0 : gmt_z_to_zz (GMT, S.base);
 					break;
 				case PSL_RNDRECT:
-					if (gmt_M_is_dnan (in[ex3])) {
-						GMT_Report (API, GMT_MSG_WARNING, "Rounded rectangle corner radius = NaN near line %d. Skipped\n", n_total_read);
-						continue;
+					if (S.n_required == 3) {	/* Got radius from input file */
+						if (gmt_M_is_dnan (in[ex3])) {
+							GMT_Report (API, GMT_MSG_WARNING, "Rounded rectangle corner radius = NaN near line %d. Skipped\n", n_total_read);
+							continue;
+						}
+						data[n].dim[2] = in[ex3];	/* radius */
 					}
-					data[n].dim[2] = in[ex3];	/* radius */
+					else
+						data[n].dim[2] = S.factor;;	/* radius */
 					/* Intentionally fall through - to do the rest under regular rectangle */
 				case PSL_RECT:
-					if (gmt_M_is_dnan (in[ex1])) {
-						GMT_Report (API, GMT_MSG_WARNING, "Rounded rectangle width = NaN near line %d. Skipped\n", n_total_read);
-						continue;
+					if (S.n_required == 2) {	/* Got dimensions from input file */
+						if (gmt_M_is_dnan (in[ex1])) {
+							GMT_Report (API, GMT_MSG_WARNING, "Rectangle width = NaN near line %d. Skipped\n", n_total_read);
+							continue;
+						}
+						data[n].dim[0] = in[ex1];
+						if (gmt_M_is_dnan (in[ex2])) {
+							GMT_Report (API, GMT_MSG_WARNING, "Rectangle height = NaN near line %d. Skipped\n", n_total_read);
+							continue;
+						}
+						data[n].dim[1] = in[ex2];	/* y-dim */
 					}
-					if (gmt_M_is_dnan (in[ex2])) {
-						GMT_Report (API, GMT_MSG_WARNING, "Rounded rectangle height = NaN near line %d. Skipped\n", n_total_read);
-						continue;
-					}
-					data[n].dim[0] = in[ex1];	/* x-dim */
-					data[n].dim[1] = in[ex2];	/* y-dim */
 					break;
 				case PSL_ELLIPSE:
 				case PSL_ROTRECT:
@@ -1752,13 +1758,26 @@ EXTERN_MSC int GMT_psxyz (void *V_API, int mode, void *args) {
 					gmt_illuminate (GMT, Ctrl->I.value, current_fill.rgb);
 					gmt_illuminate (GMT, Ctrl->I.value, default_fill.rgb);
 				}
-				if (change & 4 && penset_OK) gmt_setpen (GMT, &current_pen);
-				if (change & 1) polygon = true;
-				if (change & 2 && !Ctrl->L.polygon) {
-					polygon = false;
-					PSL_setcolor (PSL, current_fill.rgb, PSL_IS_STROKE);
+
+				if (Ctrl->W.cpt_effect) {
+					if (Ctrl->W.pen.cptmode & 1) {	/* Change current pen color via CPT */
+						gmt_M_rgb_copy (current_pen.rgb, current_fill.rgb);
+						gmt_setpen (GMT, &current_pen);
+					}
+					if ((Ctrl->W.pen.cptmode & 2) == 0 && !Ctrl->G.active)	/* Turn off CPT fill */
+						gmt_M_rgb_copy (current_fill.rgb, GMT->session.no_rgb);
+					else if (Ctrl->G.active)
+						current_fill = Ctrl->G.fill;
 				}
-				if (change & 4) gmt_setpen (GMT, &current_pen);
+				else if (Zin == NULL) {
+					if (change & 1) polygon = true;
+					if (change & 2 && !Ctrl->L.polygon) {
+						polygon = false;
+						PSL_setcolor (PSL, current_fill.rgb, PSL_IS_STROKE);
+					}
+					if (change & 4 && penset_OK) gmt_setpen (GMT, &current_pen);
+				}
+
 				if (S.G.label_type == GMT_LABEL_IS_HEADER)	/* Get potential label from segment header */
 					gmt_extract_label (GMT, L->header, S.G.label, SH->ogr);
 

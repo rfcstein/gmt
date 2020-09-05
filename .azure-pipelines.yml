@@ -244,6 +244,12 @@ jobs:
         containerImage: ubuntu:18.04
       Ubuntu2004:   # CMake 3.16.3 + GNU 9.3.0
         containerImage: ubuntu:20.04
+      Debian9:      # CMake 3.7.2 + GNU 6.3.0
+        containerImage: debian:stretch
+      Debian10:     # CMake 3.13.4 + GNU 8.3.0
+        containerImage: debian:buster
+      DebianSid:    # CMake 3.16.3 + GNU 10.1.0
+        containerImage: debian:sid
 
   container:
     image: $[ variables['containerImage'] ]
